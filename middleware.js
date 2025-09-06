@@ -1,4 +1,4 @@
-import { authMiddleware } from "@clerk/nextjs";
+import { authMiddleware } from "@clerk/nextjs/server";
 import arcjet, { createMiddleware, detectBot, shield } from "@arcjet/next";
 import { createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
