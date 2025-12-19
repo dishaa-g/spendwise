@@ -12,7 +12,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { format, subDays, startOfDay, endOfDay } from "date-fns";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -39,32 +39,23 @@ export function AccountChart({ transactions }) {
       ? startOfDay(subDays(now, range.days))
       : startOfDay(new Date(0));
 
-    // Filter transactions within date range
     const filtered = transactions.filter(
       (t) => new Date(t.date) >= startDate && new Date(t.date) <= endOfDay(now)
     );
 
-    // Group transactions by date
     const grouped = filtered.reduce((acc, transaction) => {
       const date = format(new Date(transaction.date), "MMM dd");
-      if (!acc[date]) {
-        acc[date] = { date, income: 0, expense: 0 };
-      }
-      if (transaction.type === "INCOME") {
-        acc[date].income += transaction.amount;
-      } else {
-        acc[date].expense += transaction.amount;
-      }
+      if (!acc[date]) acc[date] = { date, income: 0, expense: 0 };
+      if (transaction.type === "INCOME") acc[date].income += transaction.amount;
+      else acc[date].expense += transaction.amount;
       return acc;
     }, {});
 
-    // Convert to array and sort by date
     return Object.values(grouped).sort(
       (a, b) => new Date(a.date) - new Date(b.date)
     );
   }, [transactions, dateRange]);
 
-  // Calculate totals for the selected period
   const totals = useMemo(() => {
     return filteredData.reduce(
       (acc, day) => ({
@@ -75,53 +66,64 @@ export function AccountChart({ transactions }) {
     );
   }, [filteredData]);
 
+  const net = totals.income - totals.expense;
+
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-7">
-        <CardTitle className="text-base font-normal">
-          Transaction Overview
-        </CardTitle>
-        <Select defaultValue={dateRange} onValueChange={setDateRange}>
-          <SelectTrigger className="w-[140px]">
-            <SelectValue placeholder="Select range" />
-          </SelectTrigger>
-          <SelectContent>
-            {Object.entries(DATE_RANGES).map(([key, { label }]) => (
-              <SelectItem key={key} value={key}>
-                {label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </CardHeader>
-      <CardContent>
-        <div className="flex justify-around mb-6 text-sm">
-          <div className="text-center">
-            <p className="text-muted-foreground">Total Income</p>
-            <p className="text-lg font-bold text-green-500">
+    <Card className="rounded-3xl border-border bg-card shadow-sm">
+      <CardContent className="p-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <div className="text-sm font-semibold">Transaction overview</div>
+            <div className="mt-1 text-xs text-muted-foreground">
+              Income vs expenses across the selected range.
+            </div>
+          </div>
+
+          <Select value={dateRange} onValueChange={setDateRange}>
+            <SelectTrigger className="w-[180px] rounded-xl">
+              <SelectValue placeholder="Select range" />
+            </SelectTrigger>
+            <SelectContent>
+              {Object.entries(DATE_RANGES).map(([key, { label }]) => (
+                <SelectItem key={key} value={key}>
+                  {label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="mt-6 grid gap-3 sm:grid-cols-3">
+          <div className="rounded-2xl border border-border bg-background/40 p-4">
+            <div className="text-xs text-muted-foreground">Total income</div>
+            <div className="mt-1 text-lg font-bold text-green-600">
               ${totals.income.toFixed(2)}
-            </p>
+            </div>
           </div>
-          <div className="text-center">
-            <p className="text-muted-foreground">Total Expenses</p>
-            <p className="text-lg font-bold text-red-500">
+
+          <div className="rounded-2xl border border-border bg-background/40 p-4">
+            <div className="text-xs text-muted-foreground">Total expenses</div>
+            <div className="mt-1 text-lg font-bold text-red-600">
               ${totals.expense.toFixed(2)}
-            </p>
+            </div>
           </div>
-          <div className="text-center">
-            <p className="text-muted-foreground">Net</p>
-            <p
-              className={`text-lg font-bold ${
-                totals.income - totals.expense >= 0
-                  ? "text-green-500"
-                  : "text-red-500"
-              }`}
+
+          <div className="rounded-2xl border border-border bg-background/40 p-4">
+            <div className="text-xs text-muted-foreground">Net</div>
+            <div
+              className={[
+                "mt-1 text-lg font-bold",
+                net >= 0 ? "text-green-600" : "text-red-600",
+              ].join(" ")}
             >
-              ${(totals.income - totals.expense).toFixed(2)}
-            </p>
+              ${net.toFixed(2)}
+            </div>
           </div>
         </div>
-        <div className="h-[300px]">
+
+        <div className="my-6 h-px w-full bg-border" />
+
+        <div className="h-[320px]">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={filteredData}
@@ -145,7 +147,7 @@ export function AccountChart({ transactions }) {
                 contentStyle={{
                   backgroundColor: "hsl(var(--popover))",
                   border: "1px solid hsl(var(--border))",
-                  borderRadius: "var(--radius)",
+                  borderRadius: "12px",
                 }}
               />
               <Legend />
@@ -153,13 +155,13 @@ export function AccountChart({ transactions }) {
                 dataKey="income"
                 name="Income"
                 fill="#22c55e"
-                radius={[4, 4, 0, 0]}
+                radius={[6, 6, 0, 0]}
               />
               <Bar
                 dataKey="expense"
                 name="Expense"
                 fill="#ef4444"
-                radius={[4, 4, 0, 0]}
+                radius={[6, 6, 0, 0]}
               />
             </BarChart>
           </ResponsiveContainer>
